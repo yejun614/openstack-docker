@@ -1,0 +1,146 @@
+name: openstack
+
+services:
+  # -----------------------------------------------------------
+  database:
+    image: openstack-database
+    build: ../image/database
+    networks:
+      - main
+    volumes:
+      - ./volume/database:/var/lib/mysql
+      - ./log/databse:/var/log/mysql
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_DATABASE}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    restart: always
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"] # 또는 ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # -----------------------------------------------------------
+  message_queue:
+    image: openstack-message-queue
+    build: ../image/message_queue
+    networks:
+      - main
+    volumes:
+      - ./volume/message_queue:/var/lib/rabbitmq
+      - ./log/message_queue:/var/log/rabbitmq
+    environment:
+      RABBIT_PASS: ${RABBIT_PASS}
+    restart: always
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # -----------------------------------------------------------
+  memcached:
+    image: openstack-memcached
+    build: ../image/memcached
+    networks:
+      - main
+    volumes:
+      - ./log/memcached:/var/log/memcached
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
+
+  # -----------------------------------------------------------
+  etcd:
+    image: openstack-etcd
+    build: ../image/etcd
+    networks:
+      - main
+    volumes:
+      - ./volume/etcd:/etcd-data
+      - ./log/etcd:/var/log/etcd
+    restart: always
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # -----------------------------------------------------------
+  keystone:
+    image: openstack-keystone
+    build: ../image/keystone
+    networks:
+      - main
+    restart: always
+    depends_on:
+      database:
+        condition: service_healthy
+      message_queue:
+        condition: service_healthy
+      memcached:
+        condition: service_started
+      etcd:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/v3', timeout=5) == 200"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # -----------------------------------------------------------
+  controller:
+    image: openstack-controller
+    build: ../image/controller
+    networks:
+      - main
+      - out
+    restart: always
+    depends_on:
+      database:
+        condition: service_healthy
+      message_queue:
+        condition: service_healthy
+      memcached:
+        condition: service_started
+      etcd:
+        condition: service_healthy
+      keystone:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost/healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # -----------------------------------------------------------
+  client:
+    image: openstack-client
+    build: ../image/client
+    container_name: openstack-client
+    networks:
+      - main
+      - out
+    environment:
+      OS_USERNAME: ${OS_USERNAME}
+      OS_PASSWORD: ${OS_PASSWORD}
+      OS_PROJECT_NAME: ${OS_PROJECT_NAME}
+      OS_USER_DOMAIN_NAME: ${OS_USER_DOMAIN_NAME}
+      OS_PROJECT_DOMAIN_NAME: ${OS_PROJECT_DOMAIN_NAME}
+      OS_AUTH_URL: ${OS_AUTH_URL}
+      OS_IDENTITY_API_VERSION: ${OS_IDENTITY_API_VERSION}
+
+networks:
+  out:
+    driver: bridge
+  main:
+    internal: true
