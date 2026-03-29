@@ -1,4 +1,4 @@
-FROM openstack-base:local
+FROM openstack-base
 
 
 ARG OS_PASSWORD

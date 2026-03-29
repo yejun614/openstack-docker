@@ -1,2 +1,2 @@
 PyMySQL==1.1.2
-memcache==0.14.0
+python3-memcached==1.51
