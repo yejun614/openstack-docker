@@ -89,6 +89,8 @@ services:
         condition: service_started
       etcd:
         condition: service_healthy
+    environment:
+      OS_PASSWORD: ${OS_PASSWORD}
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/v3', timeout=5) == 200"]
       interval: 10s
@@ -104,6 +106,8 @@ services:
       - main
       - out
     restart: always
+    volumes:
+      - ./log/nginx:/var/log/nginx
     depends_on:
       database:
         condition: service_healthy

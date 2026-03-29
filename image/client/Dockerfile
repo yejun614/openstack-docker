@@ -5,7 +5,7 @@ RUN git clone -b stable/2026.1 --single-branch --depth 1 https://opendev.org/ope
 RUN pip install -r requirements.txt
 RUN pip install -e .
 
-RUN apt update && apt install -y iputils-ping curl
+RUN apt update && apt install -y iputils-ping curl mariadb-client
 
 ARG OS_USERNAME
 ARG OS_PASSWORD

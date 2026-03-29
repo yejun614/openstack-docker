@@ -31,4 +31,4 @@ wait_for_healthy
 docker exec -it openstack-client bash
 
 docker compose down
-rm -rf ./logs ./volume
+rm -rf ./log ./volume

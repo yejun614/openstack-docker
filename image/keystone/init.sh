@@ -20,12 +20,12 @@ keystone-manage credential_setup --keystone-user keystone --keystone-group keyst
 echo ----------------------------------------------------------
 echo Keystone Manager bootstrap
 
-if [[ -z "${DEPLOY_ENV}" ]]; then
-    echo WARN: ADMIN_PASS is not defined
+if [[ -z "${OS_PASSWORD}" ]]; then
+    echo WARN: OS_PASSWORD is not defined
 fi
 
 keystone-manage bootstrap \
-    --bootstrap-password "${ADMIN_PASS:-ADMIN_PASSWORD} "\
+    --bootstrap-password "${OS_PASSWORD:-ADMIN_PASS}" \
     --bootstrap-admin-url http://controller:5000/v3/ \
     --bootstrap-internal-url http://controller:5000/v3/ \
     --bootstrap-public-url http://controller:5000/v3/ \

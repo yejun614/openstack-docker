@@ -8,4 +8,3 @@ GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'KEYSTONE_DBP
 
 
 ---------------------------------------------------------------
-exit
