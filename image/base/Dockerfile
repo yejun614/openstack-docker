@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /works
 
-RUN apt update && apt install -y git
+RUN apt update && apt install -y git curl
 
 COPY requirements.txt /works/requirements.txt
 RUN pip install -r requirements.txt

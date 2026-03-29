@@ -42,7 +42,26 @@ openstack endpoint list --service glance --region RegionOne --interface internal
 
 
 
-# -------------------------------------------------------------
+
+
+echo ----------------------------------------------------------
+echo Client: Placement Warming Up
+
+
+openstack user create --domain default --password ${PLACEMENT_PASS} placement
+openstack role add --project service --user placement admin
+openstack service create --name placement --description "Placement API" placement
+
+
+openstack endpoint create --region RegionOne placement public http://placement:8778
+openstack endpoint create --region RegionOne placement internal http://placement:8778
+openstack endpoint create --region RegionOne placement admin http://placement:8778
+
+
+
+echo ----------------------------------------------------------
+echo Client: Warm-up Done
+
 touch /tmp/script_done
 
 
