@@ -8,8 +8,8 @@ services:
     networks:
       - main
     volumes:
-      - ./volume/database:/var/lib/mysql
-      - ./log/databse:/var/log/mysql
+      - vol_database:/var/lib/mysql
+      - log_database:/var/log/mysql
     environment:
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${DB_DATABASE}
@@ -17,7 +17,7 @@ services:
       MARIADB_PASSWORD: ${DB_PASSWORD}
     restart: always
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"] # 또는 ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,8 +30,8 @@ services:
     networks:
       - main
     volumes:
-      - ./volume/message_queue:/var/lib/rabbitmq
-      - ./log/message_queue:/var/log/rabbitmq
+      - vol_message_queue:/var/lib/rabbitmq
+      - log_message_queue:/var/log/rabbitmq
     environment:
       RABBIT_PASS: ${RABBIT_PASS}
     restart: always
@@ -47,8 +47,6 @@ services:
     build: ../image/memcached
     networks:
       - main
-    volumes:
-      - ./log/memcached:/var/log/memcached
     logging:
       driver: "json-file"
       options:
@@ -63,8 +61,8 @@ services:
     networks:
       - main
     volumes:
-      - ./volume/etcd:/etcd-data
-      - ./log/etcd:/var/log/etcd
+      - vol_etcd:/etcd-data
+      - log_etcd:/var/log/etcd
     restart: always
     healthcheck:
       test: ["CMD", "etcdctl", "endpoint", "health"]
@@ -107,7 +105,7 @@ services:
       - out
     restart: always
     volumes:
-      - ./log/nginx:/var/log/nginx
+      - log_controller:/var/log/nginx
     depends_on:
       keystone:
         condition: service_healthy
@@ -127,8 +125,8 @@ services:
       - main
       - out
     volumes:
-      - ./share:/share
-      - ./img:/img
+      - vol_share:/share
+      - vol_img:/img
     depends_on:
       keystone:
         condition: service_healthy
@@ -145,6 +143,7 @@ services:
       USER_PASS: ${USER_PASS}
       GLANCE_PASS: ${GLANCE_PASS}
       PLACEMENT_PASS: ${PLACEMENT_PASS}
+      NOVA_PASS: ${NOVA_PASS}
     healthcheck:
       # 플래그 파일이 존재할 때만 0(성공)을 반환
       test: ["CMD", "test", "-f", "/tmp/script_done"]
@@ -161,7 +160,7 @@ services:
       - main
     restart: always
     volumes:
-      - ./share:/share
+      - vol_share:/share
     environment:
       GLANCE_PASS: ${GLANCE_PASS}
     depends_on:
@@ -192,6 +191,42 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+
+  # -----------------------------------------------------------
+  nova:
+    image: openstack-nova
+    build: ../image/nova
+    networks:
+      - main
+    restart: always
+    environment:
+      NOVA_PASS: ${NOVA_PASS}
+      PLACEMENT_PASS: ${PLACEMENT_PASS}
+    depends_on:
+      placement:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8774"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+
+volumes:
+  vol_database:
+  log_database:
+
+  vol_message_queue:
+  log_message_queue:
+
+  vol_etcd:
+  log_etcd:
+
+  log_controller:
+
+  vol_share:
+  vol_img:
 
 
 networks:
